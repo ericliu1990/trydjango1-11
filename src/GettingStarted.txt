@@ -1,0 +1,4 @@
+Getting Started
+
+settings.py is the main confi folder
+manage.py is the root of the django prj
