@@ -22,7 +22,7 @@ SECRET_KEY = 'pa5@6ija3*y$3=yvn8!_+635u(qxb4lz8kd*q*#4h@r4m@%0r0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
+#TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'restaurants'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -49,6 +50,23 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'muypicky.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR,'templates')], #your path to templates 
+        'APP_DIRS': True,
+        'OPTIONS':{
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+            'debug': DEBUG,
+        },
+    },
+]
 
 WSGI_APPLICATION = 'muypicky.wsgi.application'
 

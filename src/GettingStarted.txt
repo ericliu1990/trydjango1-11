@@ -4,3 +4,231 @@ settings.py is the main config folder
 manage.py is the root of the django prj
 
 python manage.py runserver
+
+Note (2018/6/14)
+5] What django does
+
+1. handles URLs
+2. returns responses
+3. remembers things (remember what to response)
+
+accounts -- user "django app"
+vedio -- 'django app'
+menu listing
+
+python manage.py startapp restaurants  // create an app called restaurants
+views: the place to handle urls
+
+======HTML & Django============
+6] Rendering HTML 
+	html_var = 'f strings'
+	html_= f"""<!DOCTYPE html>
+	<html lang=en>
+	<head>
+	</head>
+	<body>
+	<h1>Hello World!</h1>
+	<p>This is {html_var} coming through</p>
+	</body>
+	</html>
+	"""
+	#f strings 
+	return HttpResponse(html_)
+7] render a django template
+template settings in settings/base.py is how are template being randered
+
+8] context in django templates
+use {% verbatim %}{% endverbatim %}   in template(html) it will show the original template
+should not be too much logic in the html but should be in the view (views.py )
+
+9] template inheritance
+{% block head_title %}About || {{block.super}}{% endblock head_title %}
+{% extends "base.html" %}
+{% block content %}
+Hello there
+{% endblock content %}
+
+10] Include Template Tag
+{% include 'snippets/sidebar.html' %}
+{% include 'snippets/css.html' %}
+
+11] Reactive Virtualenv
+.\Scripts\activate(deactivate)
+
+12]Class based views
+a different way to render a view/another way to handle a url
+refer to https://docs.djangoproject.com/en/1.11/ref/class-based-views/
+urls:
+from restaurants.views import ContactView
+url(r'^contact/(?P<Id>\d+)$', ContactView.as_view()),
+views:
+class ContactView(View):
+	def get(self, request, *args, **kwargs):
+		print(kwargs)
+		context = {}
+		return render(request, "contact.html", context) 
+
+13] Template view
+eg:
+class HomeView(TemplateView):
+	template_name = 'home.html'
+	#overwirite the predefined method
+	def get_context_data(self, *args, **kwargs):
+		context = super(HomeView, self).get_context_data(*args, **kwargs)
+		#print(context)
+		num = random.randint(0,10000);
+		some_list = [num, random.randint(0,100000), random.randint(0,100000)]
+		context = {
+			"html_var":"context variable", 
+			"random_num":num, 
+			"bool_item":True,
+			"some_list":some_list
+		}
+		return context 
+
+
+if there is no context for the view, can use 
+url(r'^about$', TemplateView.as_view(template_name='about.html')),
+instead of 
+url(r'^contact$', ContactView.as_view())
+
+14] remembering things with models
+if Django. No changes detected when "makemigrations"
+firstly use : python manage.py makemigrations --empty yourappname to generate an empty initial.py
+then use: python manage.py makemigrations generate the original model related migration file
+
+in local.py add new 'restaurants' under INSTALLED_APPS
+in models.py under restaurants, create a new model:
+class RestaurantLocation(models.Model): 
+	name = models.CharField(max_length=120)
+	location = models.CharField(max_length=120, null=True, blank=True)
+
+python manage.py makemigrations
+python manage.py migrate
+
+15]More on Model Fields
+timestamp	= models.DateTimeField(auto_now=False, auto_now_add=False)
+
+16] displaying saved data
+
+in views.py
+from .models import RestaurantLocation
+
+def restaurant_listview(request):
+	template_name = 'restaurants/restaurants_list.html'
+	queryset = RestaurantLocation.objects.all()
+	context = {
+		"object_list":queryset
+	}
+	return render(request, template_name, context)
+
+in template(restaurants_list.html)
+<ul>
+	{% for obj in object_list %}
+		<li>{{obj}}<br/>
+		{{ obj.name }} {{ obj.location }} {{ obj.category }} {{ obj.timestamp }} {{ obj.update }}</li>
+	{% endfor %}
+</ul>
+
+17] understanding querysets
+allow u to grab data from database
+https://docs.djangoproject.com/en/1.11/ref/models/querysets/
+
+18] generic list view
+https://docs.djangoproject.com/en/1.11/ref/class-based-views/generic-display/
+in views:
+from django.views.generic import ListView
+class SearchRestaurantsListView(ListView):
+	#it will use the default <model name>_list.html as template
+	def get_queryset(self):
+		print (self.kwargs)
+		slug = self.kwargs.get("slug")
+		if slug:
+			queryset = RestaurantLocation.objects.filter(
+				Q(category__iexact=slug) | Q(category__icontains=slug))
+		else:
+			queryset = RestaurantLocation.objects.none
+		return queryset
+
+in urls:
+    url(r'^restaurants/(?P<slug>\w+)$', SearchRestaurantsListView.as_view()),
+
+
+ 19] restaurant profile detail
+in urls:
+url(r'^restaurants/(?P<pk>\w+)$', RestaurantsDetailView.as_view()),
+in views:
+ class RestaurantsDetailView(DetailView):
+	queryset = RestaurantLocation.objects.all()
+	def get_context_data(self, *args, **kwargs):
+		print(self.kwargs)
+		context=super(RestaurantsDetailView, self).get_context_data(*args, **kwargs)
+		print(context)
+		return context
+
+if want to use customized key
+in urls.py
+url(r'^restaurants/(?P<rest_id>\w+)$', RestaurantsDetailView.as_view()),
+in views:
+add 
+	def get_object(self, *args, **kwargs):
+		rest_id = self.kwargs.get('rest_id')
+		obj = get_object_or_404(RestaurantLocation, id=rest_id) # pk = rest_id
+		return obj
+to 
+class RestaurantsDetailView(DetailView):
+
+create a restaurantlocation_detail.html
+{% extends "base.html" %}
+{% block head_title %}Restaurant || {{block.super}}{% endblock head_title %}
+
+{% block content %}
+<h1>{{object.name}}  <small>{{object.category}}</small></h1>
+<p>{{object.location}}</p>
+<p>{{object.timestamp}}, updated {{object.update|timesince}} ago</p>
+{% endblock content %}
+
+
+20] slugFiled & the Unique Slug generator
+to design your own urls
+http://127.0.0.1:8000/restaurants/<toufu>  <toufu> is called slug
+
+a-unique-slug-generator-for-django:
+https://www.codingforentrepreneurs.com/blog/a-unique-slug-generator-for-django/
+
+models.py
+add new field to models.py
+slug		= models.SlugField(null=True, blank=True)
+	@property
+	def title(self):
+		return self.name
+add new utils
+unique_slug_generator and random_string_generator
+they will auto generate the unique slug based on the object title
+
+21] signal for unique slugs
+https://docs.djangoproject.com/en/1.11/topics/signals/
+
+in models.py
+from django.db.models.signals import pre_save, post_save
+
+def rl_pre_save_receiver(sender, instance, *args, **kwargs):
+	print ('saving..')
+	print(instance.timestamp)
+	if not instance.slug:
+	 	instance.slug = unique_slug_generator(instance)
+
+pre_save.connect(rl_pre_save_receiver, sender=RestaurantLocation)
+
+22] slug as URL params
+in restaurants_list.html
+add:
+<ul>
+	{% for obj in object_list %}
+		<li><a href='/restaurants/{{obj.slug}}'>{{obj}}</a><br/>
+		{{ obj.nameq }} {{ obj.location }} {{ obj.category }} {{ obj.timestamp }} {{ obj.update }}</li>
+	{% endfor %}
+</ul>
+in urls.py
+add
+url(r'^restaurants/(?P<slug>[\w-]+)$', RestaurantsDetailView.as_view()),
