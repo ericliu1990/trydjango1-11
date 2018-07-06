@@ -734,5 +734,9 @@ add search form
 
 =================================================================================================
 41]follow users
+add new models Profile to profile.py
+create database for user-profile follower and following relationship
+
+register Profile model in admin.py under profile
 =================================================================================================
 46] Watch & Go Live (8:02:32)
