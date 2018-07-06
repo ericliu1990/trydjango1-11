@@ -739,4 +739,55 @@ create database for user-profile follower and following relationship
 
 register Profile model in admin.py under profile
 =================================================================================================
+42] Follow Button Form
+in muypicky/urls.py
+add new url url(r'^profile-follow/$', ProfileFollowToggle.as_view(), name='follow')
+
+in profiles/models.py
+create ProfileManager to manage the following flag
+request_user is the user that request this action
+username_to_toggle is request.POST.get("username") which is the user in the profile to follow
+class ProfileManager(models.Manager):
+	def toggle_follow(self, request_user, username_to_toggle):
+#based on the username_to_toggle get the profile object
+		_profile = Profile.objects.get(user__username__iexact=username_to_toggle)
+		user = request_user
+		is_following = False
+# requested user is in the profile user's follower list
+		if user in _profile.followers.all():
+			_profile.followers.remove(user)
+		else:
+			_profile.followers.add(user)
+			is_following=True
+		return _profile, is_following
+
+class Profile(models.Model):
+...
+	objects = ProfileManager()
+
+in profile/views.py
+#create a template tag filter after creating the in point
+class ProfileFollowToggle(LoginRequiredMixin, View):
+	def post(self, request, *args, **kwargs):
+		username_to_toggle = request.POST.get("username")
+		_profile, is_following = Profile.objects.toggle_follow(request.user, username_to_toggle)
+#return the profile page
+		return redirect(f"/profile/{_profile.user.username}")
+
+in profiles/user.html add following to include the profiles/snippet/follow_form.html
+<p>{% include 'profiles/snippet/follow_form.html' with username=user.username is_following=is_following %}</p> 
+
+create profiles/snippet/follow_form.html
+add follow/unfollow button
+{% if request.user.is_authenticated %}
+<form class='form' method="POST" action='{% url "follow" %}'> {% csrf_token %}
+<input type='hidden' name='username' value='{% if username %}{{username}}{% else %}{{ request.user }}{%endif%}'/>
+{% if username != request.user.username %}
+<button class='btn {% if is_following %}btn-default{% else %}btn-primary{% endif %}'>{% if is_following %}UnFollow{% else %}Follow{% endif %}</button>
+{% endif %}
+</form>
+{% endif %}
+=================================================================================================
+43] Following Home Page Feed
+=================================================================================================
 46] Watch & Go Live (8:02:32)

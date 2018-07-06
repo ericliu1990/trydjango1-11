@@ -1,14 +1,35 @@
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import DetailView
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import DetailView, View
 from django.contrib.auth import get_user_model
 from django.http import Http404
-
+from django.contrib.auth.mixins import LoginRequiredMixin 
 
 from restaurants.models import RestaurantLocation
 from menus.models import Items
 # Create your views here.
 
+from .models import Profile
+
 User = get_user_model()
+
+#create a template tag filter after creating the in point
+class ProfileFollowToggle(LoginRequiredMixin, View):
+	def post(self, request, *args, **kwargs):
+		#print(request.data)
+		# print(request.POST)
+		username_to_toggle = request.POST.get("username")
+
+		_profile, is_following = Profile.objects.toggle_follow(request.user, username_to_toggle)
+
+		# print(user_to_toggle)
+		# _profile = Profile.objects.get(user__username__iexact=user_to_toggle)
+		# user = request.user
+		# if user in _profile.followers.all():
+		# 	_profile.followers.remove(user)
+		# else:
+		# 	_profile.followers.add(user)
+
+		return redirect(f"/profile/{_profile.user.username}")
 
 class ProfileDetailsView(DetailView):
 	queryset = User.objects.filter(is_active=True)
@@ -23,6 +44,12 @@ class ProfileDetailsView(DetailView):
 	def get_context_data(self, *args, **kwargs):
 		context = super(ProfileDetailsView,self).get_context_data(*args,**kwargs)
 		user = context['user']
+		#check whether the requested user is following the user in profile
+		is_following = False
+		if user.profile in self.request.user.is_following.all():
+			is_following=True
+		context['is_following'] = is_following
+
 		query = self.request.GET.get('q')
 		
 		item_exists = Items.objects.filter(user=user).exists()

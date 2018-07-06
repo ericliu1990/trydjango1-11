@@ -37,6 +37,8 @@ from restaurants.views import (
     restaurant_FBV_createview
 )
 
+from profiles.views import ProfileFollowToggle
+
 urlpatterns = [
     # Examples:
     # url(r'^$', 'muypicky.views.home', name='home'),
@@ -75,5 +77,6 @@ urlpatterns = [
     url(r'^about$', TemplateView.as_view(template_name='about.html'), name='about'),
     url(r'^contact$', TemplateView.as_view(template_name='contact.html'), name='contact'),
 
-    url(r'^login/$', LoginView.as_view(), name='login')
+    url(r'^login/$', LoginView.as_view(), name='login'),
+    url(r'^profile-follow/$', ProfileFollowToggle.as_view(), name='follow')
 ]
