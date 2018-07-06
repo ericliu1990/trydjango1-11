@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block head_title %} {{ user.username }} || {{block.super}}{% endblock head_title %}
+
+{% block content %}
+<style>
+mark { 
+    background-color: yellow;
+    color: black;
+}
+</style>
+<script>
+</script>
+<h1>{{user.username}}</h1>  
+<form class='form' method='GET' action=''>
+<input type='text' placeholder="Search..." name='q' value='{{ request.GET.q }}'>
+<button class='btn btn-default' type='submit' >Search</button>
+</form>
+
+<hr/>
+{% if locations %}
+{% for rest in locations %}
+	<div class='row'>
+		<div class='col-sm-12'>
+			<dic class='thumbnail'>
+			<h4><b>{{ rest.title }}</b> </h4> 
+			<p><a href='{{ request.path }}?q={{rest.location}}'>{{rest.location}}</a>
+				| <a href='{{ request.path }}?q={{rest.category}}'>{{rest.category}}</a></p>
+			<ul>
+				{% for item in rest.items_set.all %}
+					<li style='margin-bottom: 15px;'><b>{{ item.name }}</b><br/>
+						<!-- {{ item.contents }} -->
+						{% for ing in item.get_contents %}
+							<a href='{{ request.path }}?q={{ing}}'>{{ing}}</a>
+						{% endfor %}
+	<!-- 					{% for ing in item.get_contents %}
+						<span class='badge badge-default'>{{ ing }}</span>
+						{% endfor %} -->
+	<!-- 					{% for ing in item.get_contents %}
+						<span style='padding:2px 4px;margin-right:4px; background-color:#ccc'>{{ ing }}</span>
+						{% endfor %} -->
+					</li>
+				{% endfor %}
+			</ul>
+			
+		</div>
+	</div>
+{% endfor %}
+{% else %}
+<p class='lead'> No Items Found</p>
+{% endif %}
+{% endblock content %}

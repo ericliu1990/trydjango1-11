@@ -155,6 +155,13 @@ in urls:
 
 
  19] restaurant profile detail
+ 	#detail view need:
+	#Define RestaurantsDetailView.model, 
+	#RestaurantsDetailView.queryset, 
+	#or override RestaurantsDetailView.get_queryset().
+
+	# Generic detail view RestaurantsDetailView must be called with either an object pk or a slug.
+
 in urls:
 url(r'^restaurants/(?P<pk>\w+)$', RestaurantsDetailView.as_view()),
 in views:
@@ -232,3 +239,500 @@ add:
 in urls.py
 add
 url(r'^restaurants/(?P<slug>[\w-]+)$', RestaurantsDetailView.as_view()),
+
+user type url --> urls.py parse and find the related view in views.py (map url to controller's action/method in views.py)
+the invoked view will load the corresponding model from models.py and get custimized queryset and send to template(html) as object_list (can get the slug property from DB and assign to the new url dynamicly)
+user will get the tempalte shown in browser
+
+23] Get single items from the DB
+category__iexact
+RestaurantLocation.objects.filter(category__iexact='western')
+
+24] saving data the hard + wrong way
+create new template form.html
+{% extends "base.html" %}
+{% block head_title %}Add Restaurant || {{block.super}}{% endblock head_title %}
+
+{% block content %}
+<h1>Add Restaurants</h1>
+<form>
+	<input type='test' name='title' placeholder='Your Title'>
+	<input type='test' name='location' placeholder='Your Location'>
+	<input type='test' name='category' placeholder='Your Category'>
+	<button type='submit'>Save</button>
+</form>
+{% endblock content %}
+
+create new form.py
+from django import forms
+
+class RestaurantCreateForm(forms.Form):
+	name 		= forms.CharField()
+	location 	= forms.CharField(required=False)
+	category 	= forms.CharField(required=False)
+
+update views.py
+from .forms import RestaurantCreateForm
+
+def restaurant_createview(request):
+	template_name = 'restaurants/form.html'
+	context = {
+	}
+	return render(request, template_name, context)
+
+update urls.py
+import restaurant_createview
+add
+url(r'^restaurants/create$', restaurant_createview),
+
+update utils.py to avoid 'create' to be saved as slug
+DONT_USE = ['create']
+if slug in DONT_USE:
+        new_slug = "{slug}-{randstr}".format(
+                    slug=slug,
+                    randstr=random_string_generator(size=4)
+                )
+        return unique_slug_generator(instance, new_slug=new_slug)
+
+after clicking save, the url updated as shoen below:
+?title=Mcdonald&location=1+hougang+ave&category=western (Get params, cuz the default method of form is 'GET' int form.html)
+
+when the form mothod is 'POST' CSRF token is needed for security reason 
+{% csrf_token %} is the security token django generate for the page
+in forms.html
+<form method='POST'> {% csrf_token %}
+	<input type='test' name='title' placeholder='Your Title'>
+	<input type='test' name='location' placeholder='Your Location'>
+	<input type='test' name='category' placeholder='Your Category'>
+	<button type='submit'>Save</button>
+</form>
+
+use the form for data validation
+
+25] The Power of Django Forms
+in views:
+def restaurant_createview(request):
+	form = RestaurantCreateForm(request.POST or None)
+	errors = None
+	if(form.is_valid()):
+		obj = RestaurantLocation.objects.create(
+				name=form.cleaned_data.get('name'),
+				location=form.cleaned_data.get('location'),
+				category=form.cleaned_data.get('category')
+			)
+		return HttpResponseRedirect("/restaurants")
+	if form.errors:
+		#print(form.errors)
+		errors = form.errors
+
+	template_name = 'restaurants/form.html'
+	context = {
+		"form":form, "errors":errors
+	}
+
+in forms.py
+	def clean_name(self):    #clean_<propertyname>
+		name = self.cleaned_data.get("name")
+		if name == "Hello":
+			raise forms.ValidationError("Not a valid name")
+		return name
+
+in forms.html
+<form method='POST'> {% csrf_token %}
+	{{ form.as_p }}
+	{% if errors %}
+	{{  errors  }}
+	{% endif %}<br> 
+	<button type='submit'>Save</button>
+</form>
+
+26] the extra power of Django Forms
+in forms.py
+
+class RestaurantLocationCreateForm(forms.ModelForm):
+	class Meta:
+		model = RestaurantLocation
+		fields = [
+			'name',
+			'location',
+			'category',
+		]
+
+in views.py
+class RestaurantCreateView(CreateView):
+	form_class = RestaurantLocationCreateForm
+	template_name = 'restaurants/form.html'
+	success_url = "/restaurants";
+
+in urls.py
+url(r'^restaurants/create$', RestaurantCreateView.as_view()),
+
+2018/06/30
+27] simple + effective validation
+1) in forms.py add validation in form by using clean_<propertyname>
+class RestaurantLocationCreateForm(forms.ModelForm):
+	email = forms.EmailField()
+	class Meta:
+		model = RestaurantLocation
+		fields = [
+			'name',
+			'location',
+			'category',
+		]
+
+	def clean_name(self):    #clean_<propertyname>
+		name = self.cleaned_data.get("name")
+		if name == "Hello":
+			raise forms.ValidationError("Not a valid name")
+		return name
+
+	def clean_email(self):
+		email = self.cleaned_data.get("email")
+		if ".edu" in email:
+			raise forms.ValidationError("We do not accept edu emails")
+		return email
+
+2) 
+add validators.py
+from django.core.exceptions import ValidationError
+
+CATEGORIES = ['Mexico', 'western', 'Asian', 'Unknown']
+
+def validate_category(value):
+	cat = value.capitalize()
+	if not value in CATEGORIES and not cat in CATEGORIES:
+		raise ValidationError(f"{value} not a valid category")
+
+invoke validate_category function in forms.py
+from .validators import validate_category
+class RestaurantLocationCreateForm(forms.ModelForm):
+	category = forms.CharField(required=False, validators=[validate_category])
+	class Meta:
+		model = RestaurantLocation
+		fields = [
+			'name',
+			'location',
+			'category',
+		]
+
+or invoke validate_category function in models.py
+from .validators import validate_category
+
+#models.model --> derive from models
+class RestaurantLocation(models.Model): 
+	category 	= models.CharField(max_length=120, null=True, blank=True, validators=[validate_category])
+
+
+28] let users own data
+in models.py
+from django.conf import settings
+Users = settings.AUTH_USER_MODEL
+class RestaurantLocation(models.Model): 
+	owner 		= models.ForeignKey(Users) #class_instance.model_set.all()  # Django Models Unleashed JOINCFE.com
+
+
+Command:
+from restaurants.models import RestaurantLocation
+RestaurantLocation.objects.filter(owner__id='1')
+qs = RestaurantLocation.objects.filter(owner__username__iexact='eric')
+User = obj.owner.__class__
+>>> User
+<class 'django.contrib.auth.models.User'>
+>>> User.objects.all()
+<QuerySet [<User: eric>]>
+>>> eric_user = User.objects.all().first()
+>>> eric_user.restaurantlocation_set.all()
+<QuerySet [<RestaurantLocation: toufu>, <RestaurantLocation: mexico-roll>, <RestaurantLocation: sushi>, <RestaurantLocation: beef-steak>, <RestaurantLocation: beef-steak>, <RestaurantLocation: Mcdonald>, <RestaurantLocation: create>, <RestaurantLocation: create>, <RestaurantLocation: newItem>, <RestaurantLocation: newItem>, <RestaurantLocation: popeyes>, <RestaurantLocation: hello>, <RestaurantLocation: Hello>, <RestaurantLocation: createview>, <RestaurantLocation: create another>, <RestaurantLocation: chicken chop>, <RestaurantLocation: new item>, <RestaurantLocation: new food>, <RestaurantLocation: new0>, <RestaurantLocation: new1>, '...(remaining elements truncated)...']>
+>>> new_qs =  eric_user.restaurantlocation_set.all()
+>>> new_obj = new_qs.first()
+>>> new_obj
+<RestaurantLocation: toufu>
+>>> RK = new_obj.__class__
+>>> RK.objects.all()
+<QuerySet [<RestaurantLocation: toufu>, <RestaurantLocation: mexico-roll>, <RestaurantLocation: sushi>, <RestaurantLocation: beef-steak>, <RestaurantLocation: beef-steak>, <RestaurantLocation: Mcdonald>, <RestaurantLocation: create>, <RestaurantLocation: create>, <RestaurantLocation: newItem>, <RestaurantLocation: newItem>, <RestaurantLocation: popeyes>, <RestaurantLocation: hello>, <RestaurantLocation: Hello>, <RestaurantLocation: createview>, <RestaurantLocation: create another>, <RestaurantLocation: chicken chop>, <RestaurantLocation: new item>, <RestaurantLocation: new food>, <RestaurantLocation: new0>, <RestaurantLocation: new1>, '...(remaining elements truncated)...']>
+
+=================================================================================================
+29] Associate user to form data in FBV (form based view)
+in urls.py
+url(r'^restaurants/create_FBV$' , restaurant_FBV_createview),
+in views.py
+def restaurant_FBV_createview(request):
+
+	form = RestaurantLocationCreateForm(request.POST or None)
+	errors = None
+	if(form.is_valid()):
+		if request.user.is_authenticated():
+			instance = form.save(commit=False)
+			instance.owner = request.user
+			instance.save()
+			return HttpResponseRedirect("/restaurants")
+		else:
+			return HttpResponseRedirect("/login")
+	if form.errors:
+		errors = form.errors
+
+	template_name = 'restaurants/form.html'
+	context = {
+		"form":form, "errors":errors
+	}
+	return render(request, template_name, context)
+=================================================================================================
+30] Associate user to data in a Class based View
+in views.py 
+add to 
+class RestaurantCreateView(CreateView):
+	form_class = RestaurantLocationCreateForm
+	template_name = 'restaurants/form.html'
+	success_url = "/restaurants";
+
+	#Create view will run the form_valid method by default 
+	#in the form_valid it will do form.save() by default
+	def form_valid(self, form):
+		instance = form.save(commit=False)
+		instance.owner = self.request.user
+		#instance.save()
+		return super(RestaurantCreateView, self).form_valid(form)
+=================================================================================================
+31] login required to view
+
+local settings:
+LOGIN_URL = '/login' set the default login url name
+
+a) form based view:
+from django.contrib.auth.decorators import login_required
+@login_required(login_url='/login')
+def restaurant_FBV_createview(request):
+
+b) class based view:
+from django.contrib.auth.mixins import LoginRequiredMixin # use for class based views
+class RestaurantCreateView(LoginRequiredMixin, CreateView):
+	form_class = RestaurantLocationCreateForm
+	template_name = 'restaurants/form.html'
+	success_url = "/restaurants";
+	#cutimize login page name
+	login_url = '/newlogin'
+=================================================================================================
+32] login view
+create login.html under restaurants/template/registration
+in urls.py
+from django.contrib.auth.views import LoginView
+url(r'^login/$', LoginView.as_view(), name='login')
+]
+
+=================================================================================================
+33] using reverse to shortcut URLs
+add urls.py under restaurants
+remove the restaurants and change to relative path, add name for each url
+
+from django.conf.urls import include, url
+
+from .views import (
+	RestaurantsListView,
+	RestaurantsDetailView,
+	RestaurantCreateView,
+
+)
+
+urlpatterns = [
+
+    url(r'^$', RestaurantsListView.as_view(), name='list'),
+    url(r'^/create$', RestaurantCreateView.as_view(),  name='create'),
+    url(r'^/(?P<slug>[\w-]+)$', RestaurantsDetailView.as_view(), name='detail')
+]
+
+
+in urls.py from muypicky
+replace all restaurants related urls to 
+url(r'^restaurants/', include('restaurants.urls', namespace='restaurants')),
+
+in models.py use reverse to shorcut urls (<namespcae>:<urlname>)
+add 
+def get_absolute_url(self):
+		return reverse('restaurants:detail', kwargs={'slug': self.slug})
+under
+class RestaurantLocation(models.Model): 
+
+in nav.html
+use <namespcae>:<urlname>
+<a href='{% url "restaurants:list" %}'>Restaurants</a>
+
+in restaurantlocation_list.html
+use get_absolute_url method to return the item detail url after creation
+<a href='{{ obj.get_absolute_url }}'/>{{obj}}</a><br/>
+this replace the success_url assigning in the RestaurantCreateView
+
+use <namespcae>:<urlname>
+<a href='{% url "restaurants:create" %}'>Create</a>
+
+=================================================================================================
+34] Menu Items App
+create new app:
+python manage.py startapp menus
+
+in menus/models, create new model for items
+
+from django.conf import settings
+from django.db import models
+from restaurants.models import RestaurantLocation
+
+class Items(models.Model):
+	# association
+	user 		= models.ForeignKey(settings.AUTH_USER_MODEL)
+	restaurant	= models.ForeignKey(RestaurantLocation)
+	# item stuff
+	name 		= models.CharField(max_length=120)
+	contents	= models.TextField(help_text='Seperate each by comma')
+	excludes	= models.TextField(blank=True, null=True, help_text='Seperate each by comma')
+	public 		= models.BooleanField(default=True)
+	timestamp	= models.DateTimeField(auto_now_add=True)
+	updated 	= models.DateTimeField(auto_now=True)
+
+
+	class Meta:
+		ordering = ['-updated','-timestamp'] # Item.objects.all() 
+		#-updated --> return the first updated item, 
+		#updated  --> return the last updated item
+
+	def get_contents(self):
+		return self.contents.split(",")
+
+	def get_excludes(self):
+		return self.contents.split(",")
+
+in menus/admin.py
+from django.contrib import admin
+
+from .models import Items
+
+admin.site.register(Items)
+
+in base.py add new apps
+
+INSTALLED_APPS = (
+    'menus'
+)
+
+=================================================================================================
+35] Menu Item Views
+Add views for items, similar to restaurant views
+=================================================================================================
+36] Limiting Form Field to QuerySet
+get the kwargs from views in views.py
+	def get_form_kwargs(self):
+		kwargs = super(ItemsCreateView, self).get_form_kwargs()
+		kwargs['user']=self.request.user
+		# kwargs['instance']=Items.objects.filter(user=self.request.user).first()
+		return kwargs 
+
+use the kwargs as filter etc. in forms.py
+def __init__(self, user=None, *args, **kwargs):
+		print(user)
+		# print(kwargs.pop('instance'))
+		print(kwargs)
+		super(ItemsForm, self).__init__(*args, **kwargs)
+		self.fields['restaurant'].queryset = RestaurantLocation.objects.filter(owner=user)
+=================================================================================================
+37] Personalized Items
+in restaurants view
+do a filter that only show the items related to the login user
+class RestaurantsListView(LoginRequiredMixin, ListView):
+	def get_queryset(self):
+		return RestaurantLocation.objects.filter(owner=self.request.user)
+=================================================================================================
+38]User Profile View
+create new app profile
+=================================================================================================
+39]style profile with Bootstrap
+=================================================================================================
+40] Adding a Robust Search (6:11:56)
+Note: all the query logic should be defined in the model instead of view
+in models.py under restaurants
+from django.db.models import Q
+Users = settings.AUTH_USER_MODEL
+
+# this to define a custimized queryset
+class RestaurantLocationQuerySet(models.query.QuerySet):
+	def search(self,query):
+		#if RestaurantLocation.objects.all().search(query) is called with query passed in
+		#if RestaurantLocation.objects.filter(something).search() is called 
+		#cuz RestaurantLocation.objects.all() or RestaurantLocation.objects.filter()will return 
+		get_queryset that will call RestaurantLocationQuerySet
+		if query:
+			query=query.strip()
+			return self.filter(
+				Q(name__icontains=query)|
+				Q(location__icontains=query)|
+				Q(category__icontains=query)|
+				Q(items__name__icontains=query)|
+				).distinct()
+				Q(items__contents__icontains=query)
+		else:
+			return self
+
+#this is the normal query manager
+class RestaurantLocationManager(models.Manager):
+	def get_queryset(self):
+		return RestaurantLocationQuerySet(self.model,using=self._db)
+
+# if RestaurantLocation.objects.search() is called
+	def search(self,query): 
+		return self.get_queryset().search(query)
+
+under 
+class RestaurantLocation(models.Model): 
+add
+	objects = RestaurantLocationManager() #add Model.objects.all()
+so that each time when called model.objects, it will call RestaurantLocationManager directly
+--------------------------------
+in view.py under profiles
+add to 
+class ProfileDetailsView(DetailView):
+	
+	def get_context_data(self, *args, **kwargs):
+		context = super(ProfileDetailsView,self).get_context_data(*args,**kwargs)
+		user = context['user']
+		query = self.request.GET.get('q') #q is defined in the template
+		
+		item_exists = Items.objects.filter(user=user).exists()
+		qs = RestaurantLocation.objects.filter(owner=user).search(query)
+		# if query: #this part has been moved to models.py under restaurants
+		# 	qs = qs.search(query)
+			#qs = RestaurantLocation.objects.search(query)
+		if item_exists and qs.exists():
+			context['locations'] = qs
+		return context
+--------------------
+in users.html under profiles
+add search form 
+<form class='form' method='GET' action=''>
+<input type='text' placeholder="Search..." name='q' value='{{ request.GET.q }}'> # q is defined here
+<button class='btn btn-default' type='submit'>Search</button>
+</form>
+
+{% if locations %} #if there are return values in context
+{% for rest in locations %} 
+	<div class='row'>
+		<div class='col-sm-12'>
+			<dic class='thumbnail'>
+			<h4><b>{{ rest.title }}</b> </h4> 
+			<p><a href='{{ request.path }}?q={{rest.location}}'>{{rest.location}}</a> #add hyperlink to the location name
+				| <a href='{{ request.path }}?q={{rest.category}}'>{{rest.category}}</a></p> #add hyperlink to the cate name
+			<ul> 
+				{% for item in rest.items_set.all %}
+					<li style='margin-bottom: 15px;'><b>{{ item.name }}</b><br/>
+						{% for ing in item.get_contents %}
+							<a href='{{ request.path }}?q={{ing}}'>{{ing}}</a>
+							#add hyperlink to the each item name
+						{% endfor %}
+					</li>
+				{% endfor %}
+			</ul>
+			
+		</div>
+	</div>
+{% endfor %}
+
+=================================================================================================
+41]follow users
+=================================================================================================
+46] Watch & Go Live (8:02:32)

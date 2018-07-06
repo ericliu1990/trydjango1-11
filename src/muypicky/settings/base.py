@@ -37,6 +37,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'restaurants',
+    'menus',
+    'profiles'
 )
 
 MIDDLEWARE_CLASSES = (

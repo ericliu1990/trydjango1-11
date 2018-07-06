@@ -1,5 +1,5 @@
 @echo off
-set "VIRTUAL_ENV=F:\MyProject\trydjango1-11"
+set "VIRTUAL_ENV=D:\MyProject\Try-Django-1.11"
 
 if defined _OLD_VIRTUAL_PROMPT (
     set "PROMPT=%_OLD_VIRTUAL_PROMPT%"
@@ -9,7 +9,7 @@ if defined _OLD_VIRTUAL_PROMPT (
     )
     set "_OLD_VIRTUAL_PROMPT=%PROMPT%"
 )
-set "PROMPT=(trydjango1-11) %PROMPT%"
+set "PROMPT=(Try-Django-1.11) %PROMPT%"
 
 REM Don't use () to avoid problems with them in %PATH%
 if defined _OLD_VIRTUAL_PYTHONHOME goto ENDIFVHOME

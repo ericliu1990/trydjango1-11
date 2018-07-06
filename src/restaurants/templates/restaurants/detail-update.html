@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block head_title %} {{ form.instance.title }} | Restaurant || {{block.super}}{% endblock head_title %}
+
+{% block content %}
+<h1>{{form.instance.title}}  <small>{{form.instance.category}}</small></h1>
+<p>{{form.instance.location}}</p>
+<p>{{form.instance.timestamp}}, updated {{form.instance.update|timesince}} ago</p>
+</br>
+
+<hr/>
+<h3>Make Changes</h3>
+<!-- form here is the context comming through -->
+{% include 'snippets/form-snippet.html' with form=form %}
+<!-- <a href='../restaurants'>Back to Restaurants</a> -->
+{% endblock content %}
+
