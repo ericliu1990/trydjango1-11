@@ -830,6 +830,9 @@ Add register view
 Add register template
 =================================================================================================
 45 - Activation Keys (7:46:52)
+https://github.com/codingforentrepreneurs/django-user-model-unleashed/blob/master/src/accounts/forms.py
+https://www.codingforentrepreneurs.com/blog/?q=send_mail
+https://www.codingforentrepreneurs.com/blog/configure-email-in-django/
 =================================================================================================
 46 - Watch & Go Live (8:02:29)
 =================================================================================================

@@ -37,7 +37,7 @@ from restaurants.views import (
     restaurant_FBV_createview
 )
 
-from profiles.views import ProfileFollowToggle, RegisterView
+from profiles.views import ProfileFollowToggle, RegisterView, activate_user_view
 from menus.views import HomeView
 
 urlpatterns = [
@@ -82,5 +82,6 @@ urlpatterns = [
     url(r'^login/$', LoginView.as_view(), name='login'),
     url(r'^logout/$', LogoutView.as_view(), name='logout'),
     url(r'^register/$', RegisterView.as_view(), name='register'),
-    url(r'^profile-follow/$', ProfileFollowToggle.as_view(), name='follow')
+    url(r'^profile-follow/$', ProfileFollowToggle.as_view(), name='follow'),
+    url(r'^activate/(?P<code>[a-z0-9].*)/$', activate_user_view, name='activate'),
 ]
