@@ -38,6 +38,7 @@ from restaurants.views import (
 )
 
 from profiles.views import ProfileFollowToggle
+from menus.views import HomeView
 
 urlpatterns = [
     # Examples:
@@ -49,7 +50,8 @@ urlpatterns = [
     url(r'^restaurants/', include('restaurants.urls', namespace='restaurants')),
     url(r'^profile/', include('profiles.urls', namespace='profile')),
     #url(r'^$', HomeView.as_view()), #this need to be used like this because it contains context in views.py
-    url(r'^$', TemplateView.as_view(template_name='home.html'), name='home'),
+    # url(r'^$', TemplateView.as_view(template_name='home.html'), name='home'),
+    url(r'^$', HomeView.as_view(), name='home'),
     #url(r'^restaurants$', restaurant_listview),
     
     #included from restaurants/urls.py

@@ -788,6 +788,46 @@ add follow/unfollow button
 </form>
 {% endif %}
 =================================================================================================
-43] Following Home Page Feed
+43] Following Home Page 
+in menus/views.py
+add home view to show the menu items of other user's whose profile is followed by current user 
+class HomeView(LoginRequiredMixin, View):
+	def get(self, request, *args, **kwargs):
+		if not request.user.is_authenticated():
+			return render(request, "home.thml", {})  #return the original home page
+		else:
+			user = self.request.user #get current user
+			is_following_user_id = [x.user.id for x in user.is_following.all()] #get list of user id that current user following
+			qs = Items.objects.filter(user__id__in = is_following_user_id, public=True).order_by("-updated")[:10] #first 3 latest # get menu items based on the user id
+
+			return render(request, "menus/home-feed.html", {'object_list':qs})
+add home-feed.html template
+{% if object_list %}
+	{% for obj in object_list %}
+
+		<div class='thumbnail'>
+			<h3><a href='{% url "profile:detail" username=obj.user %}'>{{obj.user }}</a></h3> 	
+			<h4><b>{{obj.name }}</b></h4> 	
+			<p><a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.name}}'>{{obj.restaurant.name}}</a> | <a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.location}}'>{{obj.restaurant.location}}</a> | <a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.category}}'>{{obj.restaurant.category}}</a></p>
+			<p>
+				<b>{{obj.name }}:</b>
+					{% if obj.contents %} With 
+						{% for item in obj.get_contents %}
+						<a href='{% url "profile:detail" username=obj.user %}?q={{item}}'>{{item}}</a>
+						{% endfor %}
+					{% endif %}
+			</p>
+		</div>
+
+	{% endfor %}
+{% else %}
+<p class='lead'> No Items Found</p>
+{% endif %}
 =================================================================================================
-46] Watch & Go Live (8:02:32)
+44 - Register View (7:38:12)
+=================================================================================================
+45 - Activation Keys (7:46:52)
+=================================================================================================
+46 - Watch & Go Live (8:02:29)
+=================================================================================================
+47 - Thank you (8:04:04)﻿

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class='row'>
+<div class='col-sm-6 text-center col-sm-offset-3'>
+<h1>{{ request.user }}'s Following Feed</h1> 
+<h4><a href='{% url "profile:detail" username=request.user %}'>>My Profile</a></h4>
+
+{% if object_list %}
+	{% for obj in object_list %}
+
+		<div class='thumbnail'>
+			<h3><a href='{% url "profile:detail" username=obj.user %}'>{{obj.user }}</a></h3> 	
+			<h4><b>{{obj.name }}</b></h4> 	
+			<p><a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.name}}'>{{obj.restaurant.name}}</a> | <a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.location}}'>{{obj.restaurant.location}}</a> | <a href='{% url "profile:detail" username=obj.user %}?q={{obj.restaurant.category}}'>{{obj.restaurant.category}}</a></p>
+			<p>
+				<b>{{obj.name }}:</b>
+					{% if obj.contents %} With 
+						{% for item in obj.get_contents %}
+						<a href='{% url "profile:detail" username=obj.user %}?q={{item}}'>{{item}}</a>
+						{% endfor %}
+					{% endif %}
+			</p>
+		</div>
+
+	{% endfor %}
+{% else %}
+<p class='lead'> No Items Found</p>
+{% endif %}
+</div>
+</div>
+{% endblock content %}

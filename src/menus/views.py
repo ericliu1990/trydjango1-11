@@ -1,18 +1,28 @@
 from django.shortcuts import render
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import View, ListView, DetailView, CreateView, UpdateView
 # Create your views here.
 from .models import Items
 from .forms import ItemsForm
+from django.contrib.auth.mixins import LoginRequiredMixin 
 
-class ItemsListView(ListView):
+class HomeView(LoginRequiredMixin, View):
+	def get(self, request, *args, **kwargs):
+		if not request.user.is_authenticated():
+			return render(request, "home.thml", {})
+		else:
+			user = self.request.user
+			is_following_user_id = [x.user.id for x in user.is_following.all()] 
+			qs = Items.objects.filter(user__id__in = is_following_user_id, public=True).order_by("-updated")[:10] #first 3 latest
+
+			return render(request, "menus/home-feed.html", {'object_list':qs})
+
+class ItemsListView(LoginRequiredMixin, ListView):
 	def get_queryset(self):
 		return Items.objects.filter(user=self.request.user)
 
-class ItemsDetailView(DetailView):
+class ItemsDetailView(LoginRequiredMixin, DetailView):
 	def get_queryset(self):
 		return Items.objects.filter(user=self.request.user)
-
-from django.contrib.auth.mixins import LoginRequiredMixin
 
 class ItemsCreateView(LoginRequiredMixin, CreateView):
 	template_name = 'form.html'
