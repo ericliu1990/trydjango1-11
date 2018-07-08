@@ -17,7 +17,7 @@ including another URLconf
 2. add a url to urlpatterns: url(r'^blog/', include('blog.urls'))
 """
 
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 
 
 
@@ -37,7 +37,7 @@ from restaurants.views import (
     restaurant_FBV_createview
 )
 
-from profiles.views import ProfileFollowToggle
+from profiles.views import ProfileFollowToggle, RegisterView
 from menus.views import HomeView
 
 urlpatterns = [
@@ -80,5 +80,7 @@ urlpatterns = [
     url(r'^contact$', TemplateView.as_view(template_name='contact.html'), name='contact'),
 
     url(r'^login/$', LoginView.as_view(), name='login'),
+    url(r'^logout/$', LogoutView.as_view(), name='logout'),
+    url(r'^register/$', RegisterView.as_view(), name='register'),
     url(r'^profile-follow/$', ProfileFollowToggle.as_view(), name='follow')
 ]

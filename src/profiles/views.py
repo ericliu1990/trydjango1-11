@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import DetailView, View
+from django.views.generic import DetailView, View, CreateView
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.contrib.auth.mixins import LoginRequiredMixin 
@@ -8,9 +8,20 @@ from restaurants.models import RestaurantLocation
 from menus.models import Items
 # Create your views here.
 
+from .forms import RegisterForm
 from .models import Profile
 
 User = get_user_model()
+
+class RegisterView(CreateView):
+	form_class = RegisterForm
+	template_name = 'registration/register.html'
+	success_url = '/'
+
+	def dispatch(self, *args, **kwargs):
+		# if self.request.user.is_authenticated():
+		# 	return redirect("/logout")
+		return super(RegisterView, self).dispatch(*args, **kwargs)
 
 #create a template tag filter after creating the in point
 class ProfileFollowToggle(LoginRequiredMixin, View):

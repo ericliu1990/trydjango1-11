@@ -30,6 +30,10 @@ class Profile(models.Model):
 	def __str__(self):
 		return self.user.username
 
+	def send_activation_email(self):
+		print("activation")
+		pass
+
 
 def post_save_user_reveiver(sender, instance, created, *args, **kwargs):
 	if created:
